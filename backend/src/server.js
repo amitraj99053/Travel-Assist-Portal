@@ -19,10 +19,16 @@ const adminRoutes = require('./routes/adminRoutes');
 // Initialize express
 const app = express();
 const server = http.createServer(app);
+
+// CORS configuration - allow only specific origins
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
+const allowedOrigins = corsOrigin.split(',').map(origin => origin.trim());
+
 const io = socketIo(server, {
   cors: {
-    origin: '*',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
