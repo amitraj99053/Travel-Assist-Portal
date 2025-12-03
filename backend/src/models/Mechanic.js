@@ -71,6 +71,17 @@ const MechanicSchema = new mongoose.Schema({
     certificationFile: String,
     identityFile: String,
   },
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point',
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      required: false,
+    },
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -80,5 +91,8 @@ const MechanicSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+// Create geospatial index for location-based queries
+MechanicSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model('Mechanic', MechanicSchema);
