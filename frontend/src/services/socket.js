@@ -2,7 +2,7 @@ import io from 'socket.io-client';
 
 let socket = null;
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://127.0.0.1:5000';
 
 export const initializeSocket = () => {
   if (!socket) {
@@ -21,6 +21,12 @@ export const getSocket = () => {
     return initializeSocket();
   }
   return socket;
+};
+
+export const updateLocation = (data) => {
+  if (socket) {
+    socket.emit('update-location', data);
+  }
 };
 
 export const disconnectSocket = () => {
@@ -58,4 +64,30 @@ export const onMechanicLocation = (callback) => {
 export const onNewMessage = (callback) => {
   const sock = getSocket();
   sock.on('new-message', callback);
+};
+
+// New functions for real-time requests
+export const joinUserRoom = (userId) => {
+  const sock = getSocket();
+  sock.emit('join-user-room', userId);
+};
+
+export const joinMechanicRoom = () => {
+  const sock = getSocket();
+  sock.emit('join-mechanic-room');
+};
+
+export const onNewRequest = (callback) => {
+  const sock = getSocket();
+  sock.on('new-request', callback);
+};
+
+export const onRequestAccepted = (callback) => {
+  const sock = getSocket();
+  sock.on('request-accepted', callback);
+};
+
+export const onRequestUnavailable = (callback) => {
+  const sock = getSocket();
+  sock.on('request-unavailable', callback);
 };

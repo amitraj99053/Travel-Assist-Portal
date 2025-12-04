@@ -27,6 +27,14 @@ exports.createServiceRequest = async (req, res) => {
       status: 'pending',
     });
 
+    // Notify mechanics about the new request
+    const io = req.app.get('io');
+    // In a real app, we would filter by location here or let the client filter
+    // For now, broadcast to all mechanics
+    const populatedRequest = await ServiceRequest.findById(serviceRequest._id).populate('userId', 'firstName lastName phone profilePicture');
+
+    io.to('mechanics').emit('new-request', populatedRequest);
+
     successResponse(res, 201, 'Service request created successfully', {
       id: serviceRequest._id,
       title: serviceRequest.title,
@@ -144,5 +152,35 @@ exports.cancelServiceRequest = async (req, res) => {
     successResponse(res, 200, 'Service request cancelled');
   } catch (error) {
     errorResponse(res, 500, 'Failed to cancel request: ' + error.message);
+  }
+};
+
+// Get nearby service requests (for mechanics)
+exports.getNearbyServiceRequests = async (req, res) => {
+  try {
+    const { latitude, longitude, maxDistance = 10 } = req.query;
+
+    if (!latitude || !longitude) {
+      return errorResponse(res, 400, 'Please provide latitude and longitude');
+    }
+
+    // Find pending requests within radius that are not assigned to any mechanic
+    const requests = await ServiceRequest.find({
+      status: 'pending',
+      $or: [{ mechanicId: { $exists: false } }, { mechanicId: null }],
+      location: {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [parseFloat(longitude), parseFloat(latitude)],
+          },
+          $maxDistance: maxDistance * 1000, // Convert km to meters
+        },
+      },
+    }).populate('userId', 'firstName lastName phone profilePicture');
+
+    successResponse(res, 200, 'Nearby service requests found', requests);
+  } catch (error) {
+    errorResponse(res, 500, 'Failed to find service requests: ' + error.message);
   }
 };

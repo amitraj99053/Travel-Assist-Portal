@@ -37,7 +37,7 @@ exports.registerUser = async (req, res) => {
 
     successResponse(res, 201, 'User registered successfully', {
       user: {
-        id: user._id,
+        _id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -53,6 +53,7 @@ exports.registerUser = async (req, res) => {
 
 // Register Mechanic
 exports.registerMechanic = async (req, res) => {
+  let user = null;
   try {
     const {
       firstName,
@@ -90,11 +91,22 @@ exports.registerMechanic = async (req, res) => {
     // Check if user exists
     const userExists = await User.findOne({ $or: [{ email }, { phone }] });
     if (userExists) {
-      return errorResponse(res, 409, 'User with this email or phone already exists');
+      // Check if it's a broken mechanic account (User exists but Mechanic profile missing)
+      if (userExists.role === 'mechanic') {
+        const mechanicProfile = await Mechanic.findOne({ userId: userExists._id });
+        if (!mechanicProfile) {
+          // Broken account! Delete it and allow re-registration
+          await User.findByIdAndDelete(userExists._id);
+        } else {
+          return errorResponse(res, 409, 'User with this email or phone already exists');
+        }
+      } else {
+        return errorResponse(res, 409, 'User with this email or phone already exists');
+      }
     }
 
     // Create user
-    const user = await User.create({
+    user = await User.create({
       firstName,
       lastName,
       email,
@@ -119,7 +131,7 @@ exports.registerMechanic = async (req, res) => {
 
     successResponse(res, 201, 'Mechanic registered successfully. Awaiting admin verification.', {
       user: {
-        id: user._id,
+        _id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -129,6 +141,10 @@ exports.registerMechanic = async (req, res) => {
       token,
     });
   } catch (error) {
+    // Cleanup user if mechanic creation fails
+    if (user && user._id) {
+      await User.findByIdAndDelete(user._id);
+    }
     errorResponse(res, 500, 'Registration failed: ' + error.message);
   }
 };
@@ -159,7 +175,7 @@ exports.login = async (req, res) => {
 
     successResponse(res, 200, 'Login successful', {
       user: {
-        id: user._id,
+        _id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,

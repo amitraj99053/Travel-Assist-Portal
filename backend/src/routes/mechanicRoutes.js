@@ -11,5 +11,6 @@ router.put('/availability', authenticate, authorize(['mechanic']), mechanicContr
 router.put('/request/:requestId/accept', authenticate, authorize(['mechanic']), mechanicController.acceptServiceRequest);
 router.get('/bookings', authenticate, authorize(['mechanic']), mechanicController.getMechanicBookings);
 router.put('/booking/:bookingId/complete', authenticate, authorize(['mechanic']), mechanicController.completeBooking);
+router.put('/booking/:bookingId/status', authenticate, authorize(['mechanic']), mechanicController.updateBookingStatus);
 
 module.exports = router;

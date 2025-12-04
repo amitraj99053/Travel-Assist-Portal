@@ -114,6 +114,9 @@ exports.acceptServiceRequest = async (req, res) => {
 
     const { requestId } = req.params;
     const mechanic = await Mechanic.findOne({ userId: req.user._id });
+    if (!mechanic) {
+      return errorResponse(res, 404, 'Mechanic profile not found');
+    }
 
     const serviceRequest = await ServiceRequest.findByIdAndUpdate(
       requestId,
@@ -123,14 +126,93 @@ exports.acceptServiceRequest = async (req, res) => {
         acceptedAt: new Date(),
       },
       { new: true }
-    );
+    ).populate('mechanicId');
+
+    if (!serviceRequest) {
+      return errorResponse(res, 404, 'Service request not found or invalid');
+    }
+
+
+
+    // Create Booking
+    const booking = await Booking.create({
+      userId: serviceRequest.userId,
+      mechanicId: mechanic._id,
+      serviceRequestId: serviceRequest._id,
+      bookingDate: new Date(),
+      status: 'scheduled', // Initial status
+      paymentStatus: 'pending',
+      location: {
+        address: serviceRequest.location.address,
+        coordinates: serviceRequest.location.coordinates
+      },
+      serviceDescription: serviceRequest.description,
+      totalCost: 0, // Will be updated on completion
+      duration: 0
+    });
+
+    const io = req.app.get('io');
+
+    // Notify the user who created the request
+    io.to(`user-${serviceRequest.userId}`).emit('request-accepted', {
+      requestId: serviceRequest._id,
+      bookingId: booking._id,
+      mechanic: {
+        name: req.user.firstName + ' ' + req.user.lastName,
+        phone: req.user.phone,
+        location: mechanic.location,
+        vehicleInfo: serviceRequest.vehicleInfo
+      },
+      status: 'accepted'
+    });
+
+    // Notify other mechanics to remove this request from their list
+    io.to('mechanics').emit('request-unavailable', {
+      requestId: serviceRequest._id
+    });
 
     successResponse(res, 200, 'Service request accepted', {
       id: serviceRequest._id,
+      bookingId: booking._id,
       status: serviceRequest.status,
     });
   } catch (error) {
+    console.error('ACCEPT REQUEST ERROR:', error);
     errorResponse(res, 500, 'Failed to accept request: ' + error.message);
+  }
+};
+
+// Update booking status (On the Way, Arrived)
+exports.updateBookingStatus = async (req, res) => {
+  try {
+    if (req.user.role !== 'mechanic') {
+      return errorResponse(res, 403, 'Forbidden: Not a mechanic');
+    }
+
+    const { bookingId } = req.params;
+    const { status } = req.body; // 'en_route', 'arrived', 'in_progress'
+
+    const booking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { status },
+      { new: true }
+    );
+
+    if (!booking) {
+      return errorResponse(res, 404, 'Booking not found');
+    }
+
+    const io = req.app.get('io');
+    io.to(`user-${booking.userId}`).emit('booking-updated', {
+      bookingId: booking._id,
+      status: booking.status
+    });
+
+    successResponse(res, 200, 'Booking status updated', {
+      status: booking.status
+    });
+  } catch (error) {
+    errorResponse(res, 500, 'Failed to update status: ' + error.message);
   }
 };
 
@@ -162,6 +244,7 @@ exports.completeBooking = async (req, res) => {
       return errorResponse(res, 403, 'Forbidden: Not a mechanic');
     }
 
+    const { totalCost } = req.body;
     const booking = await Booking.findById(req.params.bookingId);
 
     if (!booking) {
@@ -169,6 +252,7 @@ exports.completeBooking = async (req, res) => {
     }
 
     booking.status = 'completed';
+    booking.totalCost = totalCost || 500; // Default or provided cost
     await booking.save();
 
     // Update mechanic stats
@@ -180,8 +264,16 @@ exports.completeBooking = async (req, res) => {
       { new: true }
     );
 
+    const io = req.app.get('io');
+    io.to(`user-${booking.userId}`).emit('booking-completed', {
+      bookingId: booking._id,
+      totalCost: booking.totalCost,
+      status: 'completed'
+    });
+
     successResponse(res, 200, 'Booking completed', {
       status: booking.status,
+      totalCost: booking.totalCost
     });
   } catch (error) {
     errorResponse(res, 500, 'Failed to complete booking: ' + error.message);

@@ -54,6 +54,18 @@ app.use('/api/admin', adminRoutes);
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
 
+  // Join user specific room
+  socket.on('join-user-room', (userId) => {
+    socket.join(`user-${userId}`);
+    console.log(`Socket ${socket.id} joined user room: user-${userId}`);
+  });
+
+  // Join mechanic room (for broadcasting new requests)
+  socket.on('join-mechanic-room', () => {
+    socket.join('mechanics');
+    console.log(`Socket ${socket.id} joined mechanics room`);
+  });
+
   // Join room for live tracking
   socket.on('join-tracking', (bookingId) => {
     socket.join(`tracking-${bookingId}`);
@@ -61,8 +73,13 @@ io.on('connection', (socket) => {
   });
 
   // Send location update
-  socket.on('location-update', (data) => {
-    io.to(`tracking-${data.bookingId}`).emit('mechanic-location', data);
+  socket.on('update-location', (data) => {
+    // data: { location: {lat, lng}, bookingId, userId }
+    // Emit to the specific user
+    io.to(`user-${data.userId}`).emit('mechanic-location-update', {
+      bookingId: data.bookingId,
+      location: data.location
+    });
   });
 
   // Join chat room
@@ -81,6 +98,9 @@ io.on('connection', (socket) => {
     console.log('Client disconnected:', socket.id);
   });
 });
+
+// Make io accessible to our router
+app.set('io', io);
 
 // Health check
 app.get('/api/health', (req, res) => {

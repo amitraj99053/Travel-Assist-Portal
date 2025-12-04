@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
 
 export const apiCall = async (method, endpoint, data = null, token = null) => {
   try {
@@ -48,6 +48,7 @@ export const authAPI = {
 // Service APIs
 export const serviceAPI = {
   createRequest: (data, token) => apiCall('POST', '/services', data, token),
+  getNearbyRequests: (query, token) => apiCall('GET', `/services/nearby-requests?${query}`, null, token),
   getNearbyMechanics: (query, token) => apiCall('GET', `/services/nearby-mechanics?${query}`, null, token),
   getUserRequests: (token) => apiCall('GET', '/services/my-requests', null, token),
   getRequestById: (id, token) => apiCall('GET', `/services/${id}`, null, token),
@@ -70,7 +71,8 @@ export const mechanicAPI = {
   updateAvailability: (data, token) => apiCall('PUT', '/mechanics/availability', data, token),
   acceptRequest: (requestId, token) => apiCall('PUT', `/mechanics/request/${requestId}/accept`, null, token),
   getBookings: (token) => apiCall('GET', '/mechanics/bookings', null, token),
-  completeBooking: (bookingId, token) => apiCall('PUT', `/mechanics/booking/${bookingId}/complete`, null, token),
+  completeBooking: (bookingId, token, data) => apiCall('PUT', `/mechanics/booking/${bookingId}/complete`, data, token),
+  updateBookingStatus: (bookingId, status, token) => apiCall('PUT', `/mechanics/booking/${bookingId}/status`, { status }, token),
 };
 
 // Review APIs

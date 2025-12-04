@@ -35,7 +35,7 @@ const RegisterPage = () => {
     try {
       const response = await authAPI.register(formData);
       if (response.success) {
-        login(response.data, response.data.token);
+        login(response.data.user, response.data.token);
         navigate('/dashboard');
       }
     } catch (err) {
@@ -143,11 +143,19 @@ const RegisterPage = () => {
         </button>
       </form>
 
-      <p className="text-center text-gray-600 mt-4">
-        Already have an account?{' '}
-        <a href="/login" className="text-blue-600 font-medium hover:underline">
-          Login here
-        </a>
+      <p className="text-center text-gray-600 mt-4 space-y-2">
+        <div>
+          Already have an account?{' '}
+          <a href="/login" className="text-blue-600 font-medium hover:underline">
+            Login here
+          </a>
+        </div>
+        <div>
+          Are you a mechanic?{' '}
+          <a href="/register-mechanic" className="text-blue-600 font-medium hover:underline">
+            Join as Service Provider
+          </a>
+        </div>
       </p>
     </AuthLayout>
   );

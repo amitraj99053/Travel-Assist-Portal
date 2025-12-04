@@ -7,6 +7,7 @@ import useAuthStore from '../context/authStore';
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('user'); // 'user' or 'mechanic'
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -20,8 +21,15 @@ const LoginPage = () => {
     try {
       const response = await authAPI.login({ email, password });
       if (response.success) {
-        login(response.data, response.data.token);
-        navigate(response.data.role === 'mechanic' ? '/mechanic-dashboard' : '/dashboard');
+        // Verify role matches (optional, but good for UX)
+        if (role === 'mechanic' && response.data.user.role !== 'mechanic') {
+          setError('This account is not registered as a mechanic.');
+          setIsLoading(false);
+          return;
+        }
+
+        login(response.data.user, response.data.token);
+        navigate('/dashboard');
       }
     } catch (err) {
       setError(err.message || 'Login failed');
@@ -31,7 +39,30 @@ const LoginPage = () => {
   };
 
   return (
-    <AuthLayout title="Welcome Back" subtitle="Sign in to your account">
+    <AuthLayout
+      title={role === 'mechanic' ? "Mechanic Login" : "User Login"}
+      subtitle="Sign in to your account"
+    >
+      {/* Role Toggle */}
+      <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
+        <button
+          className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${role === 'user' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          onClick={() => setRole('user')}
+          type="button"
+        >
+          User
+        </button>
+        <button
+          className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${role === 'mechanic' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          onClick={() => setRole('mechanic')}
+          type="button"
+        >
+          Mechanic
+        </button>
+      </div>
+
       {error && <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4">{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -69,10 +100,21 @@ const LoginPage = () => {
       </form>
 
       <p className="text-center text-gray-600 mt-4">
-        Don't have an account?{' '}
-        <a href="/register" className="text-blue-600 font-medium hover:underline">
-          Register here
-        </a>
+        {role === 'mechanic' ? (
+          <>
+            New mechanic?{' '}
+            <a href="/register-mechanic" className="text-blue-600 font-medium hover:underline">
+              Register your shop
+            </a>
+          </>
+        ) : (
+          <>
+            Don't have an account?{' '}
+            <a href="/register" className="text-blue-600 font-medium hover:underline">
+              Register here
+            </a>
+          </>
+        )}
       </p>
     </AuthLayout>
   );
