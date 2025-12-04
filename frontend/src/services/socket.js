@@ -91,3 +91,13 @@ export const onRequestUnavailable = (callback) => {
   const sock = getSocket();
   sock.on('request-unavailable', callback);
 };
+
+export const onBookingUpdated = (callback) => {
+  const sock = getSocket();
+  sock.on('booking-updated', callback);
+};
+
+export const onBookingCompleted = (callback) => {
+  const sock = getSocket();
+  sock.on('booking-completed', callback);
+};

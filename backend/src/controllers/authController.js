@@ -120,11 +120,15 @@ exports.registerMechanic = async (req, res) => {
       userId: user._id,
       licenseNumber,
       licenseExpiry,
-      skills: Array.isArray(skills) ? skills : [skills],
+      skills: (Array.isArray(skills) ? skills : [skills]).map(s => s.toLowerCase()),
       yearsOfExperience,
       shopName,
       shopAddress,
       isVerified: false,
+      location: {
+        type: 'Point',
+        coordinates: [77.1025, 28.7041], // Default to Delhi until updated
+      },
     });
 
     const token = generateToken(user._id, user.role);

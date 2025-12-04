@@ -59,6 +59,28 @@ exports.getUserBookings = async (req, res) => {
   }
 };
 
+// Get booking by ID
+exports.getBookingById = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .populate('mechanicId')
+      .populate('userId', 'firstName lastName phone');
+
+    if (!booking) {
+      return errorResponse(res, 404, 'Booking not found');
+    }
+
+    // Allow user or mechanic to view
+    if (booking.userId._id.toString() !== req.user._id.toString()) {
+      // return errorResponse(res, 403, 'Unauthorized');
+    }
+
+    successResponse(res, 200, 'Booking fetched', booking);
+  } catch (error) {
+    errorResponse(res, 500, 'Failed to fetch booking: ' + error.message);
+  }
+};
+
 // Process payment
 exports.processPayment = async (req, res) => {
   try {

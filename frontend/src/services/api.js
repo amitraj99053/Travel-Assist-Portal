@@ -58,6 +58,7 @@ export const serviceAPI = {
 // Booking APIs
 export const bookingAPI = {
   createBooking: (data, token) => apiCall('POST', '/bookings', data, token),
+  getBookingById: (id, token) => apiCall('GET', `/bookings/${id}`, null, token),
   getUserBookings: (token) => apiCall('GET', '/bookings/my-bookings', null, token),
   processPayment: (data, token) => apiCall('POST', '/bookings/payment', data, token),
   getPaymentDetails: (id, token) => apiCall('GET', `/bookings/payment/${id}`, null, token),

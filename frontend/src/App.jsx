@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage';
 import MechanicRegisterPage from './pages/MechanicRegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import MechanicDashboardPage from './pages/MechanicDashboardPage';
+import PaymentPage from './pages/PaymentPage';
 import useAuthStore from './context/authStore';
 
 const PrivateRoute = ({ children }) => {
@@ -42,6 +43,14 @@ function App() {
           element={
             <PrivateRoute>
               <MechanicDashboardPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/payment/:bookingId"
+          element={
+            <PrivateRoute>
+              <PaymentPage />
             </PrivateRoute>
           }
         />

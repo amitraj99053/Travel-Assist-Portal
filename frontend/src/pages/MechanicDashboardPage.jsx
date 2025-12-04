@@ -40,9 +40,16 @@ const MechanicDashboardPage = () => {
             setNearbyRequests(prev => prev.filter(req => req._id !== data.requestId));
         });
 
+        return () => {
+            disconnectSocket();
+        };
+    }, []);
+
+    useEffect(() => {
         // Simulate location updates if on active job
-        const locationInterval = setInterval(() => {
-            if (currentJob && ['en_route', 'arrived'].includes(currentJob.status)) {
+        let locationInterval;
+        if (currentJob && ['en_route', 'arrived'].includes(currentJob.status)) {
+            locationInterval = setInterval(() => {
                 // Mock movement: slightly jitter the coordinates
                 const lat = 28.7041 + (Math.random() - 0.5) * 0.01;
                 const lng = 77.1025 + (Math.random() - 0.5) * 0.01;
@@ -51,12 +58,11 @@ const MechanicDashboardPage = () => {
                     bookingId: currentJob._id,
                     userId: currentJob.userId._id || currentJob.userId // Handle populated or ID
                 });
-            }
-        }, 5000);
+            }, 5000);
+        }
 
         return () => {
-            clearInterval(locationInterval);
-            disconnectSocket();
+            if (locationInterval) clearInterval(locationInterval);
         };
     }, [currentJob]);
 

@@ -1,26 +1,31 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../context/authStore';
-import { serviceAPI, bookingAPI } from '../services/api';
+import { serviceAPI, bookingAPI, reviewAPI } from '../services/api';
 import {
   initializeSocket,
   joinUserRoom,
   onRequestAccepted,
+  onBookingUpdated,
+  onBookingCompleted,
   disconnectSocket
 } from '../services/socket';
-import { FaMapMarkerAlt, FaPhone, FaStar, FaCreditCard } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaPhone, FaStar, FaCreditCard, FaSync } from 'react-icons/fa';
 import ServiceRequestModal from '../components/ServiceRequestModal';
 import MapTracking from '../components/MapTracking';
-import PaymentModal from '../components/PaymentModal';
+import RatingModal from '../components/RatingModal';
 
 const DashboardPage = () => {
   const { user, token } = useAuthStore();
+  const navigate = useNavigate();
   const [nearbyMechanics, setNearbyMechanics] = useState([]);
   const [userRequests, setUserRequests] = useState([]);
   const [activeBooking, setActiveBooking] = useState(null);
   const [mechanicLocation, setMechanicLocation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+  const [userReviews, setUserReviews] = useState([]);
 
   useEffect(() => {
     fetchNearbyMechanics();
@@ -35,14 +40,22 @@ const DashboardPage = () => {
       onRequestAccepted((data) => {
         console.log('Request accepted:', data);
         alert(`Your request has been accepted by ${data.mechanic.name}!`);
+        fetchUserRequests();
+        fetchActiveBooking();
+      });
 
-        // Update local state to reflect change
-        setUserRequests(prev => prev.map(req => {
-          if (req._id === data.requestId) {
-            return { ...req, status: 'accepted', mechanicId: data.mechanic };
-          }
-          return req;
-        }));
+      // Listen for booking updates
+      onBookingUpdated((data) => {
+        console.log('Booking updated:', data);
+        fetchActiveBooking();
+      });
+
+      // Listen for booking completion
+      onBookingCompleted((data) => {
+        console.log('Booking completed:', data);
+        alert('Your service has been completed! Please proceed to payment.');
+        fetchActiveBooking();
+        fetchUserRequests();
       });
     }
 
@@ -53,13 +66,28 @@ const DashboardPage = () => {
 
   const fetchActiveBooking = async () => {
     try {
-      const response = await bookingAPI.getUserBookings(token);
-      if (response.success && response.data.length > 0) {
-        // Find active or pending payment booking
-        const active = response.data.find(b =>
-          ['scheduled', 'en_route', 'arrived', 'in_progress'].includes(b.status) ||
-          (b.status === 'completed' && b.paymentStatus === 'pending')
-        );
+      const [bookingsResponse, reviewsResponse] = await Promise.all([
+        bookingAPI.getUserBookings(token),
+        reviewAPI.getUserReviews(token)
+      ]);
+
+      if (bookingsResponse.success && bookingsResponse.data.length > 0) {
+        const reviews = reviewsResponse.success ? reviewsResponse.data : [];
+        setUserReviews(reviews);
+
+        // Find active, pending payment, or unrated completed booking
+        const active = bookingsResponse.data.find(b => {
+          const isRated = reviews.some(r => r.bookingId === b._id || (r.bookingId && r.bookingId._id === b._id));
+
+          // Treat missing paymentStatus as 'pending'
+          const paymentStatus = b.paymentStatus || 'pending';
+
+          return (
+            ['scheduled', 'en_route', 'arrived', 'in_progress'].includes(b.status) ||
+            (b.status === 'completed' && paymentStatus === 'pending') ||
+            (b.status === 'completed' && paymentStatus === 'completed' && !isRated)
+          );
+        });
         setActiveBooking(active || null);
       }
     } catch (error) {
@@ -67,26 +95,27 @@ const DashboardPage = () => {
     }
   };
 
-  const handlePaymentConfirm = async () => {
+  const handleRatingSubmit = async (ratingData) => {
     if (!activeBooking) return;
     try {
-      const response = await bookingAPI.processPayment({
+      const response = await reviewAPI.submitReview({
+        mechanicId: activeBooking.mechanicId._id || activeBooking.mechanicId,
         bookingId: activeBooking._id,
-        amount: activeBooking.totalCost,
-        paymentMethod: 'upi_qr'
+        ...ratingData
       }, token);
 
       if (response.success) {
-        alert('Payment confirmed! Thank you for using Travel Assist.');
-        setIsPaymentModalOpen(false);
-        setActiveBooking(null);
-        fetchUserRequests();
+        alert('Review submitted successfully!');
+        setIsRatingModalOpen(false);
+        setActiveBooking(null); // Hide the booking card as it's now completed and rated
+        fetchUserRequests(); // Refresh requests list
       }
     } catch (error) {
-      console.error('Payment failed:', error);
-      alert('Payment failed: ' + error.message);
+      alert('Failed to submit review: ' + error.message);
     }
   };
+
+
 
   const fetchNearbyMechanics = async () => {
     try {
@@ -121,9 +150,17 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.firstName}!</h1>
-          <p className="text-gray-600 mt-2">Find the best mechanics near you</p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.firstName}!</h1>
+            <p className="text-gray-600 mt-2">Find the best mechanics near you</p>
+          </div>
+          <button
+            onClick={() => { fetchActiveBooking(); fetchUserRequests(); }}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+          >
+            <FaSync /> Refresh
+          </button>
         </div>
 
         {/* Active Service Section */}
@@ -140,12 +177,21 @@ const DashboardPage = () => {
                 )}
               </div>
 
-              {activeBooking.status === 'completed' && activeBooking.paymentStatus === 'pending' && (
+              {activeBooking.status === 'completed' && (!activeBooking.paymentStatus || activeBooking.paymentStatus === 'pending') && (
                 <button
-                  onClick={() => setIsPaymentModalOpen(true)}
+                  onClick={() => navigate(`/payment/${activeBooking._id}`)}
                   className="bg-green-600 text-white px-8 py-3 rounded-md hover:bg-green-700 font-bold flex items-center gap-2"
                 >
                   <FaCreditCard /> Pay Now
+                </button>
+              )}
+
+              {activeBooking.status === 'completed' && activeBooking.paymentStatus === 'completed' && (
+                <button
+                  onClick={() => setIsRatingModalOpen(true)}
+                  className="bg-yellow-500 text-white px-8 py-3 rounded-md hover:bg-yellow-600 font-bold flex items-center gap-2"
+                >
+                  <FaStar /> Rate Mechanic
                 </button>
               )}
 
@@ -190,16 +236,17 @@ const DashboardPage = () => {
           }}
         />
 
-        {/* Payment Modal */}
+        {/* Rating Modal */}
         {activeBooking && (
-          <PaymentModal
-            isOpen={isPaymentModalOpen}
-            onClose={() => setIsPaymentModalOpen(false)}
-            amount={activeBooking.totalCost}
-            mechanicName={activeBooking.mechanicId?.name || 'Mechanic'}
-            onConfirm={handlePaymentConfirm}
+          <RatingModal
+            isOpen={isRatingModalOpen}
+            onClose={() => setIsRatingModalOpen(false)}
+            onSubmit={handleRatingSubmit}
+            mechanicName={activeBooking.mechanicId?.userId?.firstName || 'Mechanic'}
           />
         )}
+
+
 
         {/* Nearby Mechanics */}
         <div className="mb-8">
