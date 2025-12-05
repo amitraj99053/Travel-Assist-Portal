@@ -10,5 +10,6 @@ router.post('/payment', authenticate, bookingController.processPayment);
 router.get('/payment/:id', authenticate, bookingController.getPaymentDetails);
 router.get('/:id', authenticate, bookingController.getBookingById);
 router.delete('/:id', authenticate, bookingController.cancelBooking);
+router.put('/:id/decline-payment', authenticate, bookingController.declinePayment);
 
 module.exports = router;

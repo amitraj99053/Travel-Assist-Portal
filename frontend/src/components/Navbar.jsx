@@ -25,6 +25,15 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-6">
             {user ? (
               <>
+                <Link to="/about" className="text-gray-700 hover:text-blue-600">
+                  About
+                </Link>
+                <Link to="/services" className="text-gray-700 hover:text-blue-600">
+                  Services
+                </Link>
+                <Link to="/contact" className="text-gray-700 hover:text-blue-600">
+                  Contact
+                </Link>
                 <Link to="/dashboard" className="text-gray-700 hover:text-blue-600">
                   Dashboard
                 </Link>
@@ -41,12 +50,31 @@ const Navbar = () => {
                     Admin Panel
                   </Link>
                 )}
-                <div className="flex items-center gap-3">
-                  <FaUser className="text-gray-700" />
-                  <span className="text-gray-700">{user.firstName}</span>
-                  <button onClick={handleLogout} className="text-red-600 hover:text-red-800 flex items-center gap-1">
-                    <FaSignOutAlt /> Logout
+                <div className="relative group">
+                  <button className="flex items-center gap-2 text-gray-700 hover:text-blue-600 focus:outline-none">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                      <FaUser />
+                    </div>
+                    <span className="font-medium">{user.firstName}</span>
                   </button>
+
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block border border-gray-100 z-50">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-bold text-gray-900">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-gray-500 mt-1">{user.email}</p>
+                      <p className="text-xs text-gray-500">{user.phone}</p>
+                      <span className="inline-block mt-2 px-2 py-1 text-xs font-semibold bg-blue-50 text-blue-600 rounded-full capitalize">
+                        {user.role}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <FaSignOutAlt /> Sign Out
+                    </button>
+                  </div>
                 </div>
               </>
             ) : (
@@ -73,6 +101,15 @@ const Navbar = () => {
           <div className="md:hidden pb-4 space-y-2">
             {user ? (
               <>
+                <Link to="/about" className="block py-2 text-gray-700 hover:text-blue-600">
+                  About
+                </Link>
+                <Link to="/services" className="block py-2 text-gray-700 hover:text-blue-600">
+                  Services
+                </Link>
+                <Link to="/contact" className="block py-2 text-gray-700 hover:text-blue-600">
+                  Contact
+                </Link>
                 <Link to="/dashboard" className="block py-2 text-gray-700 hover:text-blue-600">
                   Dashboard
                 </Link>

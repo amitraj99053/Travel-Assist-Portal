@@ -10,7 +10,7 @@ import {
   onBookingCompleted,
   disconnectSocket
 } from '../services/socket';
-import { FaMapMarkerAlt, FaPhone, FaStar, FaCreditCard, FaSync } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaPhone, FaStar, FaCreditCard, FaSync, FaTimesCircle } from 'react-icons/fa';
 import ServiceRequestModal from '../components/ServiceRequestModal';
 import MapTracking from '../components/MapTracking';
 import RatingModal from '../components/RatingModal';
@@ -21,6 +21,7 @@ const DashboardPage = () => {
   const [nearbyMechanics, setNearbyMechanics] = useState([]);
   const [userRequests, setUserRequests] = useState([]);
   const [activeBooking, setActiveBooking] = useState(null);
+  const [userBookings, setUserBookings] = useState([]);
   const [mechanicLocation, setMechanicLocation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -71,13 +72,17 @@ const DashboardPage = () => {
         reviewAPI.getUserReviews(token)
       ]);
 
-      if (bookingsResponse.success && bookingsResponse.data.length > 0) {
+      if (bookingsResponse.success) {
+        setUserBookings(bookingsResponse.data);
         const reviews = reviewsResponse.success ? reviewsResponse.data : [];
         setUserReviews(reviews);
 
         // Find active, pending payment, or unrated completed booking
         const active = bookingsResponse.data.find(b => {
-          const isRated = reviews.some(r => r.bookingId === b._id || (r.bookingId && r.bookingId._id === b._id));
+          const isRated = reviews.some(r => {
+            const reviewBookingId = r.bookingId && (r.bookingId._id || r.bookingId);
+            return reviewBookingId && reviewBookingId.toString() === b._id.toString();
+          });
 
           // Treat missing paymentStatus as 'pending'
           const paymentStatus = b.paymentStatus || 'pending';
@@ -85,7 +90,7 @@ const DashboardPage = () => {
           return (
             ['scheduled', 'en_route', 'arrived', 'in_progress'].includes(b.status) ||
             (b.status === 'completed' && paymentStatus === 'pending') ||
-            (b.status === 'completed' && paymentStatus === 'completed' && !isRated)
+            (b.status === 'completed' && (paymentStatus === 'completed' || paymentStatus === 'declined') && !isRated)
           );
         });
         setActiveBooking(active || null);
@@ -116,6 +121,21 @@ const DashboardPage = () => {
   };
 
 
+
+  const handleDeclinePayment = async () => {
+    if (!activeBooking) return;
+    if (window.confirm('Are you sure you want to decline payment?')) {
+      try {
+        const response = await bookingAPI.declinePayment(activeBooking._id, token);
+        if (response.success) {
+          await fetchActiveBooking();
+          setIsRatingModalOpen(true);
+        }
+      } catch (error) {
+        alert('Failed to decline payment: ' + error.message);
+      }
+    }
+  };
 
   const fetchNearbyMechanics = async () => {
     try {
@@ -178,15 +198,23 @@ const DashboardPage = () => {
               </div>
 
               {activeBooking.status === 'completed' && (!activeBooking.paymentStatus || activeBooking.paymentStatus === 'pending') && (
-                <button
-                  onClick={() => navigate(`/payment/${activeBooking._id}`)}
-                  className="bg-green-600 text-white px-8 py-3 rounded-md hover:bg-green-700 font-bold flex items-center gap-2"
-                >
-                  <FaCreditCard /> Pay Now
-                </button>
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    onClick={() => navigate(`/payment/${activeBooking._id}`)}
+                    className="bg-green-600 text-white px-8 py-3 rounded-md hover:bg-green-700 font-bold flex items-center gap-2 w-full justify-center shadow-md transition-all transform hover:scale-105"
+                  >
+                    <FaCreditCard /> Pay Now
+                  </button>
+                  <button
+                    onClick={handleDeclinePayment}
+                    className="text-red-500 hover:text-red-700 font-medium text-xs flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity mt-1"
+                  >
+                    <FaTimesCircle /> Decline Payment
+                  </button>
+                </div>
               )}
 
-              {activeBooking.status === 'completed' && activeBooking.paymentStatus === 'completed' && (
+              {activeBooking.status === 'completed' && (activeBooking.paymentStatus === 'completed' || activeBooking.paymentStatus === 'declined') && (
                 <button
                   onClick={() => setIsRatingModalOpen(true)}
                   className="bg-yellow-500 text-white px-8 py-3 rounded-md hover:bg-yellow-600 font-bold flex items-center gap-2"
@@ -283,13 +311,65 @@ const DashboardPage = () => {
                   </div>
 
                   <button
-                    onClick={() => alert(`Booking feature coming soon! You can contact ${mechanic.name} at ${mechanic.phone}`)}
-                    className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 font-medium"
+                    onClick={() => alert(`You can contact ${mechanic.name} at ${mechanic.phone}`)}
+                    className="w-full bg-blue-100 text-blue-700 py-2 rounded-md hover:bg-blue-200 font-medium"
                   >
-                    Book Now
+                    Contact Mechanic
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Booking History */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Booking History</h2>
+          {userBookings.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-600">
+              No bookings found.
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mechanic</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {userBookings.map((booking) => (
+                      <tr key={booking._id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(booking.bookingDate).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {booking.mechanicId?.userId?.firstName || 'Unknown'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {booking.serviceDescription}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${booking.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                'bg-yellow-100 text-yellow-800'
+                            }`}>
+                            {booking.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {booking.totalCost ? `₹${booking.totalCost}` : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

@@ -1,6 +1,7 @@
 const Review = require('../models/Review');
 const Booking = require('../models/Booking');
 const Mechanic = require('../models/Mechanic');
+const ServiceRequest = require('../models/ServiceRequest');
 const { successResponse, errorResponse } = require('../utils/response');
 
 // Submit review
@@ -49,6 +50,14 @@ exports.submitReview = async (req, res) => {
         totalReviews: allReviews.length,
       }
     );
+
+    // Update Service Request status to completed
+    if (booking.serviceRequestId) {
+      await ServiceRequest.findByIdAndUpdate(booking.serviceRequestId, {
+        status: 'completed',
+        completedAt: new Date(),
+      });
+    }
 
     successResponse(res, 201, 'Review submitted successfully', {
       id: review._id,

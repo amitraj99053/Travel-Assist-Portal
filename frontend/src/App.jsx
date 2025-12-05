@@ -7,6 +7,9 @@ import MechanicRegisterPage from './pages/MechanicRegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import MechanicDashboardPage from './pages/MechanicDashboardPage';
 import PaymentPage from './pages/PaymentPage';
+import AboutPage from './pages/AboutPage';
+import ServicesPage from './pages/ServicesPage';
+import ContactPage from './pages/ContactPage';
 import useAuthStore from './context/authStore';
 
 const PrivateRoute = ({ children }) => {
@@ -54,6 +57,9 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>
     </BrowserRouter>

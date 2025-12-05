@@ -63,6 +63,7 @@ export const bookingAPI = {
   processPayment: (data, token) => apiCall('POST', '/bookings/payment', data, token),
   getPaymentDetails: (id, token) => apiCall('GET', `/bookings/payment/${id}`, null, token),
   cancelBooking: (id, token) => apiCall('DELETE', `/bookings/${id}`, null, token),
+  declinePayment: (id, token) => apiCall('PUT', `/bookings/${id}/decline-payment`, null, token),
 };
 
 // Mechanic APIs

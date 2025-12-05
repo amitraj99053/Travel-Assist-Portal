@@ -15,6 +15,7 @@ const MechanicDashboardPage = () => {
     const { user, token } = useAuthStore();
     const [dashboardData, setDashboardData] = useState(null);
     const [currentJob, setCurrentJob] = useState(null);
+    const [mechanicBookings, setMechanicBookings] = useState([]);
     const [nearbyRequests, setNearbyRequests] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isAccepting, setIsAccepting] = useState(null);
@@ -69,12 +70,15 @@ const MechanicDashboardPage = () => {
     const fetchCurrentJob = async () => {
         try {
             const response = await mechanicAPI.getBookings(token);
-            if (response.success && response.data.length > 0) {
-                // Find active job (scheduled, en_route, arrived, in_progress)
-                const activeJob = response.data.find(job =>
-                    ['scheduled', 'en_route', 'arrived', 'in_progress'].includes(job.status)
-                );
-                setCurrentJob(activeJob || null);
+            if (response.success) {
+                setMechanicBookings(response.data);
+                if (response.data.length > 0) {
+                    // Find active job (scheduled, en_route, arrived, in_progress)
+                    const activeJob = response.data.find(job =>
+                        ['scheduled', 'en_route', 'arrived', 'in_progress'].includes(job.status)
+                    );
+                    setCurrentJob(activeJob || null);
+                }
             }
         } catch (error) {
             console.error('Error fetching bookings:', error);
@@ -298,6 +302,58 @@ const MechanicDashboardPage = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Job History */}
+                <div className="mb-8">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Job History</h2>
+                    {mechanicBookings.length === 0 ? (
+                        <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-600">
+                            No jobs history found.
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Earnings</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {mechanicBookings.map((job) => (
+                                            <tr key={job._id}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {new Date(job.bookingDate).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    {job.userId?.firstName} {job.userId?.lastName}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {job.serviceDescription}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${job.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                            job.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                                'bg-yellow-100 text-yellow-800'
+                                                        }`}>
+                                                        {job.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {job.totalCost ? `₹${job.totalCost}` : '-'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* Available Jobs Section */}
                 <div className="mb-8">

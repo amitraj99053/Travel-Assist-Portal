@@ -185,3 +185,29 @@ exports.cancelBooking = async (req, res) => {
     errorResponse(res, 500, 'Failed to cancel booking: ' + error.message);
   }
 };
+
+// Decline payment
+exports.declinePayment = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return errorResponse(res, 404, 'Booking not found');
+    }
+
+    if (booking.userId.toString() !== req.user._id.toString()) {
+      return errorResponse(res, 403, 'Unauthorized');
+    }
+
+    if (booking.status !== 'completed') {
+      return errorResponse(res, 400, 'Can only decline payment for completed bookings');
+    }
+
+    booking.paymentStatus = 'declined';
+    await booking.save();
+
+    successResponse(res, 200, 'Payment declined successfully');
+  } catch (error) {
+    errorResponse(res, 500, 'Failed to decline payment: ' + error.message);
+  }
+};
