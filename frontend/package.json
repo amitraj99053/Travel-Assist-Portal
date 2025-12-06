@@ -16,6 +16,7 @@
     "react-icons": "^4.7.1",
     "react-leaflet": "^4.2.0",
     "react-router-dom": "^6.8.0",
+    "react-scripts": "5.0.1",
     "socket.io-client": "^4.6.1",
     "tailwindcss": "^3.2.7",
     "zustand": "^4.3.2"
@@ -42,8 +43,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "react-scripts": "5.0.1"
   }
 }
