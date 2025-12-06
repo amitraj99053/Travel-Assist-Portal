@@ -39,6 +39,7 @@ A comprehensive web application providing real-time travel assistance, mechanic 
 | **Authentication** | JWT + bcryptjs |
 | **External APIs** | Google Maps, OpenWeatherMap |
 | **Real-time** | Socket.io for live tracking & chat |
+| **Storage** | Cloudinary (Images), MongoDB Atlas (Data) |
 
 ## 📁 Project Structure
 
@@ -50,6 +51,7 @@ Travel-Assist-Portal/
 │   │   ├── pages/              # Page components
 │   │   ├── services/           # API calls & socket
 │   │   ├── context/            # State management (Zustand)
+│   │   ├── hooks/              # Custom React hooks
 │   │   ├── utils/              # Helper functions
 │   │   ├── assets/             # Images, icons
 │   │   └── App.jsx
@@ -63,7 +65,7 @@ Travel-Assist-Portal/
 │   │   ├── routes/             # API endpoints
 │   │   ├── middleware/         # Auth, error handling
 │   │   ├── utils/              # Helpers (JWT, validators)
-│   │   ├── config/             # Database, environment
+│   │   ├── config/             # Database, Cloudinary, environment
 │   │   └── server.js
 │   ├── .env
 │   └── package.json
@@ -97,10 +99,12 @@ npm install
 cp .env.example .env
 
 # Update .env with your credentials
-# MONGODB_URI=your_mongodb_url
+# PORT=5000
+# MONGODB_URI=your_mongodb_atlas_uri
 # JWT_SECRET=your_secret_key
-# GOOGLE_MAPS_API_KEY=your_api_key
-# WEATHER_API_KEY=your_api_key
+# CLOUDINARY_CLOUD_NAME=your_cloud_name
+# CLOUDINARY_API_KEY=your_api_key
+# CLOUDINARY_API_SECRET=your_api_secret
 
 npm run dev
 ```
@@ -118,6 +122,15 @@ npm start
 
 Backend runs on `http://localhost:5000`
 Frontend runs on `http://localhost:3000`
+
+## ☁️ Cloud Deployment
+
+This project is designed to be deployed on free cloud tiers:
+
+1.  **Database**: [MongoDB Atlas](https://www.mongodb.com/atlas/database) (Free Cluster)
+2.  **File Storage**: [Cloudinary](https://cloudinary.com/) (Free Tier)
+3.  **Backend**: [Render](https://render.com/) (Web Service)
+4.  **Frontend**: [Vercel](https://vercel.com/) or [Netlify](https://www.netlify.com/)
 
 ## 📊 Database Schema
 
@@ -196,97 +209,7 @@ Admin Account:
   Password: password123
 ```
 
-## 📚 API Documentation
-
-### Auth Endpoints
-- `POST /api/auth/register` - Register user
-- `POST /api/auth/register-mechanic` - Register mechanic
-- `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Get current user
-- `PUT /api/auth/profile` - Update profile
-
-### Service Endpoints
-- `POST /api/services` - Create service request
-- `GET /api/services/nearby-mechanics` - Get nearby mechanics
-- `GET /api/services/my-requests` - Get user's requests
-- `PUT /api/services/:id/cancel` - Cancel request
-
-### Booking Endpoints
-- `POST /api/bookings` - Create booking
-- `GET /api/bookings/my-bookings` - Get user bookings
-- `POST /api/bookings/payment` - Process payment
-
-### Mechanic Endpoints
-- `GET /api/mechanics/dashboard` - Get mechanic dashboard
-- `PUT /api/mechanics/availability` - Toggle availability
-- `GET /api/mechanics/bookings` - Get mechanic's bookings
-
-### Admin Endpoints
-- `GET /api/admin/dashboard` - Admin dashboard
-- `GET /api/admin/mechanics/pending` - Pending mechanics
-- `PUT /api/admin/mechanic/:id/verify` - Verify mechanic
-
-See [SETUP_GUIDE.md](docs/SETUP_GUIDE.md) for complete API documentation.
-
-## 🎯 Core Functionalities
-
-| Feature | Status | Details |
-|---------|--------|---------|
-| User Registration | ✅ | Email & phone validation |
-| Mechanic Registration | ✅ | License & skills verification |
-| Service Requests | ✅ | Location-based matching |
-| Mechanic Finder | ✅ | Distance-based filtering |
-| Live Tracking | ✅ | Real-time location via Socket.io |
-| Chat System | ✅ | Socket.io based messaging |
-| Booking System | ✅ | Date & time scheduling |
-| Payment Processing | ✅ | Dummy gateway (extensible) |
-| Review System | ✅ | 5-star rating with comments |
-| SOS Alerts | ✅ | Emergency location sharing |
-| Admin Panel | ✅ | Mechanic verification |
-| Notifications | ✅ | In-app notifications |
-
-## 🔧 Configuration
-
-### Environment Variables
-
-**Backend (.env)**
-```
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/travel-assist-portal
-JWT_SECRET=your_jwt_secret_key
-NODE_ENV=development
-GOOGLE_MAPS_API_KEY=your_google_maps_key
-WEATHER_API_KEY=your_weather_api_key
-JWT_EXPIRE=7d
-```
-
-**Frontend (.env)**
-```
-REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_SOCKET_URL=http://localhost:5000
-```
-
-## 📈 Future Enhancements
-
-- [ ] SMS notifications via Twilio
-- [ ] Email notifications
-- [ ] Video call integration (Agora SDK)
-- [ ] Insurance integration
-- [ ] Multi-language support
-- [ ] Mobile apps (React Native)
-- [ ] Advanced analytics
-- [ ] AI-based mechanic matching
-- [ ] Subscription plans
-- [ ] Integration with payment gateways (Razorpay, Stripe)
-
-## 🐛 Known Issues & Limitations
-
-- Weather API requires internet connectivity
-- Google Maps API calls are rate-limited
-- Real-time features work best on stable internet
-- Mobile app version not included
-
-## 📝 License
+##  License
 
 MIT License - See LICENSE file for details
 
@@ -314,4 +237,4 @@ For issues or questions:
 
 **Made with ❤️ for travelers and mechanics**
 
-**Last Updated:** December 2, 2025 | **Version:** 1.0.0
+**Last Updated:** December 6, 2025 | **Version:** 1.1.0
