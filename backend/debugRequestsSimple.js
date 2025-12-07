@@ -1,26 +1,28 @@
-const mongoose = require('mongoose');
-const ServiceRequest = require('./src/models/ServiceRequest');
-require('dotenv').config();
+const axios = require('axios');
 
-const run = async () => {
+async function testRegister() {
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
-        const count = await ServiceRequest.countDocuments({ status: 'pending' });
-        console.log(`PENDING_COUNT: ${count}`);
-
-        const nearby = await ServiceRequest.find({
-            status: 'pending',
-            $or: [{ mechanicId: { $exists: false } }, { mechanicId: null }],
-            location: {
-                $near: {
-                    $geometry: { type: 'Point', coordinates: [77.1025, 28.7041] },
-                    $maxDistance: 5000000
-                }
+        console.log('Attempting to register...');
+        const response = await axios.post('http://localhost:5000/api/auth/register', {
+            firstName: 'Test',
+            lastName: 'Script',
+            email: `testscript_${Date.now()}@example.com`,
+            phone: '1234567890',
+            password: 'password123',
+            passwordConfirm: 'password123'
+        }, { timeout: 5000 });
+        console.log('Registration Success:', response.data);
+    } catch (error) {
+        if (error.code === 'ECONNABORTED') {
+            console.error('Error: Request timed out (Backend hanging?)');
+        } else {
+            console.error('Registration Error:', error.message);
+            if (error.response) {
+                console.error('Status:', error.response.status);
+                console.error('Data:', error.response.data);
             }
-        });
-        console.log(`NEARBY_COUNT: ${nearby.length}`);
-        if (nearby.length > 0) console.log(`FIRST_ID: ${nearby[0]._id}`);
-    } catch (e) { console.error(e); }
-    finally { await mongoose.connection.close(); }
-};
-run();
+        }
+    }
+}
+
+testRegister();
