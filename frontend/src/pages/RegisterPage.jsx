@@ -33,12 +33,15 @@ const RegisterPage = () => {
     setIsLoading(true);
 
     try {
+      console.log('Submitting registration form:', formData);
       const response = await authAPI.register(formData);
+      console.log('Registration API Response:', response);
       if (response.success) {
         login(response.data.user, response.data.token);
         navigate('/dashboard');
       }
     } catch (err) {
+      console.error('Registration error:', err);
       setError(err.message || 'Registration failed');
     } finally {
       setIsLoading(false);
@@ -136,6 +139,7 @@ const RegisterPage = () => {
 
         <button
           type="submit"
+          onClick={() => console.log('Button clicked')}
           disabled={isLoading}
           className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 font-medium"
         >
@@ -143,7 +147,7 @@ const RegisterPage = () => {
         </button>
       </form>
 
-      <p className="text-center text-gray-600 mt-4 space-y-2">
+      <div className="text-center text-gray-600 mt-4 space-y-2">
         <div>
           Already have an account?{' '}
           <a href="/login" className="text-blue-600 font-medium hover:underline">
@@ -156,7 +160,7 @@ const RegisterPage = () => {
             Join as Service Provider
           </a>
         </div>
-      </p>
+      </div>
     </AuthLayout>
   );
 };

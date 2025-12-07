@@ -1,4 +1,5 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+console.log('Current API_BASE_URL:', API_BASE_URL);
 
 export const apiCall = async (method, endpoint, data = null, token = null) => {
   try {
@@ -24,7 +25,9 @@ export const apiCall = async (method, endpoint, data = null, token = null) => {
       body: config.data ? JSON.stringify(config.data) : null,
     });
 
+    console.log(`[API] ${method} ${endpoint} - Status: ${response.status}`);
     const result = await response.json();
+    console.log(`[API] Response from ${endpoint}:`, result);
 
     if (!response.ok) {
       throw new Error(result.message || 'API request failed');
