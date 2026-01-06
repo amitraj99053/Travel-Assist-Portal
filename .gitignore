@@ -9,6 +9,8 @@ yarn-error.log*
 dist/
 build/
 *.log
+debug_output.txt
+output.txt
 
 # Environment variables
 .env
